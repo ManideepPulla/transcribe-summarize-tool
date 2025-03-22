@@ -32,3 +32,4 @@ This project is built with .
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/b48be487-7d23-45a2-9091-133b3c1ef43f) and click on Share -> Publish.
+Deployed link : [click Here](https://transcribe-summarize-tool.lovable.app/)
