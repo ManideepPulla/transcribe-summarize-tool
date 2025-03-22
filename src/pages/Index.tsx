@@ -9,7 +9,9 @@ import ExportOptions from '@/components/ExportOptions';
 import { 
   startTranscription, 
   getMediaStream,
-  TranscriptSegment 
+  TranscriptSegment,
+  transcribeVideoFile,
+  transcribeFromUrl
 } from '@/utils/transcriptionService';
 import { 
   generateSummary, 
@@ -25,6 +27,7 @@ const Index = () => {
   
   // State for recording and transcription
   const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
   const [audioSource, setAudioSource] = useState<'mic' | 'system'>('system');
@@ -86,6 +89,76 @@ const Index = () => {
         description: source === 'system'
           ? "Could not access system audio. Please check your browser permissions or try using microphone instead."
           : "Could not access your microphone. Please check permissions.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Handle video file upload
+  const handleVideoUpload = async (file: File) => {
+    try {
+      // Reset any existing transcription
+      setTranscript([]);
+      
+      // Set processing state
+      setIsProcessing(true);
+      
+      // Start transcription process
+      await transcribeVideoFile(
+        file,
+        (segment) => {
+          setTranscript(prev => [...prev, segment]);
+        },
+        () => {
+          // Complete processing
+          setIsProcessing(false);
+          toast({
+            title: "Transcription complete",
+            description: "Your video has been successfully transcribed.",
+          });
+        }
+      );
+    } catch (error) {
+      console.error('Error processing video:', error);
+      setIsProcessing(false);
+      toast({
+        title: "Processing failed",
+        description: "There was an error processing your video. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Handle URL transcription
+  const handleUrlTranscribe = async (url: string) => {
+    try {
+      // Reset any existing transcription
+      setTranscript([]);
+      
+      // Set processing state
+      setIsProcessing(true);
+      
+      // Start transcription process
+      await transcribeFromUrl(
+        url,
+        (segment) => {
+          setTranscript(prev => [...prev, segment]);
+        },
+        () => {
+          // Complete processing
+          setIsProcessing(false);
+          toast({
+            title: "Transcription complete",
+            description: "The content from the URL has been successfully transcribed.",
+          });
+        }
+      );
+    } catch (error) {
+      console.error('Error processing URL:', error);
+      setIsProcessing(false);
+      toast({
+        title: "Processing failed",
+        description: "There was an error processing the URL. Please check the URL and try again.",
         variant: "destructive"
       });
     }
@@ -179,11 +252,14 @@ const Index = () => {
             <RecordingPanel
               onStartRecording={handleStartRecording}
               onStopRecording={handleStopRecording}
+              onVideoUpload={handleVideoUpload}
+              onUrlTranscribe={handleUrlTranscribe}
               isRecording={isRecording}
+              isProcessing={isProcessing}
             />
             
             <TranscriptionPanel
-              isRecording={isRecording}
+              isRecording={isRecording || isProcessing}
               transcript={transcript}
             />
             
@@ -208,7 +284,10 @@ const Index = () => {
                 <RecordingPanel
                   onStartRecording={handleStartRecording}
                   onStopRecording={handleStopRecording}
+                  onVideoUpload={handleVideoUpload}
+                  onUrlTranscribe={handleUrlTranscribe}
                   isRecording={isRecording}
+                  isProcessing={isProcessing}
                 />
                 
                 <ExportOptions
@@ -221,7 +300,7 @@ const Index = () => {
               
               <div className="col-span-2 grid grid-cols-2 gap-6">
                 <TranscriptionPanel
-                  isRecording={isRecording}
+                  isRecording={isRecording || isProcessing}
                   transcript={transcript}
                 />
                 

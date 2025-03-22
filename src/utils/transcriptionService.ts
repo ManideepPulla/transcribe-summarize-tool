@@ -27,6 +27,26 @@ const MOCK_SENTENCES = [
   "Security should be our top priority regardless of platform."
 ];
 
+// Mock YouTube video transcript segments
+const MOCK_YOUTUBE_SENTENCES = [
+  "Welcome to this tutorial on modern web development.",
+  "Today we'll explore the latest trends in frontend frameworks.",
+  "React continues to be one of the most popular choices for developers.",
+  "However, Vue and Svelte are gaining significant traction as well.",
+  "Let's dive into the key differences between these technologies.",
+  "React uses a virtual DOM approach to optimize rendering.",
+  "Vue combines the best aspects of several frameworks.",
+  "Svelte takes a compile-time approach to reactivity.",
+  "Each framework has its own strengths and ideal use cases.",
+  "Performance benchmarks show interesting trade-offs between them.",
+  "Developer experience is also an important consideration.",
+  "The ecosystem around each framework continues to evolve rapidly.",
+  "Let's look at some code examples to better understand the syntax differences.",
+  "Community support is another key factor when choosing a framework.",
+  "The job market currently has high demand for React developers.",
+  "But knowledge of multiple frameworks makes you more versatile as a developer."
+];
+
 // Interface for transcript segment
 export interface TranscriptSegment {
   id: string;
@@ -98,6 +118,116 @@ export const startTranscription = async (
     clearInterval(intervalId);
     console.log('Transcription stopped');
   };
+};
+
+// New function to handle video upload transcription
+export const transcribeVideoFile = async (
+  file: File,
+  onTranscriptUpdate: (segment: TranscriptSegment) => void,
+  onComplete: () => void
+): Promise<void> => {
+  console.log('Processing uploaded video file:', file.name, file.type, file.size);
+  
+  // In a real implementation, you would:
+  // 1. Either upload the file to a server for processing
+  // 2. Or use WebAssembly to process it in-browser with something like ffmpeg.wasm
+  
+  // For demo purposes, we'll simulate processing with a delay
+  // and then provide mock transcript segments
+  
+  // Simulate processing time based on file size
+  const processingTime = Math.min(5000, Math.floor(file.size / 1000000) * 500);
+  
+  // After "processing", start providing transcript segments
+  setTimeout(() => {
+    // Sort sentences to create a more coherent narrative
+    const sortedSentences = [...MOCK_SENTENCES].sort(() => Math.random() - 0.5);
+    
+    // Generate 8-12 segments (random number)
+    const segmentCount = Math.floor(Math.random() * 5) + 8;
+    
+    // Create a sequence of transcript segments with increasing timestamps
+    for (let i = 0; i < segmentCount; i++) {
+      setTimeout(() => {
+        const speaker = SPEAKERS[i % SPEAKERS.length];
+        const text = sortedSentences[i % sortedSentences.length];
+        
+        // Create timestamps that look sequential
+        const minutes = Math.floor(i / 4);
+        const seconds = (i % 4) * 15;
+        const timestamp = `00:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        onTranscriptUpdate({
+          id: nanoid(),
+          speaker,
+          text,
+          timestamp,
+        });
+        
+        // Signal completion after the last segment
+        if (i === segmentCount - 1) {
+          setTimeout(onComplete, 1000);
+        }
+      }, i * 1000); // Space segments by 1 second
+    }
+  }, processingTime);
+};
+
+// New function to handle URL transcription (YouTube or direct video URLs)
+export const transcribeFromUrl = async (
+  url: string,
+  onTranscriptUpdate: (segment: TranscriptSegment) => void,
+  onComplete: () => void
+): Promise<void> => {
+  console.log('Processing video from URL:', url);
+  
+  // In a real implementation, you would:
+  // 1. Extract video ID if it's YouTube
+  // 2. Use YouTube API or a service to get transcript
+  // 3. Or for direct video URLs, download and process the video
+  
+  const isYouTubeUrl = url.includes('youtube.com/') || url.includes('youtu.be/');
+  console.log('Detected URL type:', isYouTubeUrl ? 'YouTube' : 'Direct video');
+  
+  // Simulate processing delay
+  const processingDelay = isYouTubeUrl ? 3000 : 5000;
+  
+  // After "processing", provide mock transcript
+  setTimeout(() => {
+    // Use YouTube-specific sentences for YouTube URLs
+    const sentencesToUse = isYouTubeUrl ? MOCK_YOUTUBE_SENTENCES : MOCK_SENTENCES;
+    
+    // Generate 10-15 segments (random number)
+    const segmentCount = Math.floor(Math.random() * 6) + 10;
+    
+    // Create a sequence of transcript segments with increasing timestamps
+    for (let i = 0; i < segmentCount; i++) {
+      setTimeout(() => {
+        const speaker = isYouTubeUrl 
+          ? 'Presenter' // For YouTube, use a single presenter
+          : SPEAKERS[i % SPEAKERS.length];
+        
+        const text = sentencesToUse[i % sentencesToUse.length];
+        
+        // Create timestamps that look sequential
+        const minutes = Math.floor(i / 5);
+        const seconds = (i % 5) * 12;
+        const timestamp = `00:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        onTranscriptUpdate({
+          id: nanoid(),
+          speaker,
+          text,
+          timestamp,
+        });
+        
+        // Signal completion after the last segment
+        if (i === segmentCount - 1) {
+          setTimeout(onComplete, 1000);
+        }
+      }, i * 1200); // Space segments by 1.2 seconds
+    }
+  }, processingDelay);
 };
 
 // Helper function to get user media with appropriate constraints
