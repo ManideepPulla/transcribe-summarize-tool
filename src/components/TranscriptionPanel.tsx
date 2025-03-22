@@ -3,18 +3,14 @@ import React, { useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Copy } from 'lucide-react';
+import { FileText, Copy, Pause, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { TranscriptSegment } from '@/utils/transcriptionService';
 
 interface TranscriptionPanelProps {
   isRecording: boolean;
-  transcript: Array<{
-    id: string;
-    speaker: string;
-    text: string;
-    timestamp: string;
-  }>;
+  transcript: TranscriptSegment[];
 }
 
 const TranscriptionPanel: React.FC<TranscriptionPanelProps> = ({
@@ -36,7 +32,7 @@ const TranscriptionPanel: React.FC<TranscriptionPanelProps> = ({
   
   const handleCopyTranscript = () => {
     const transcriptText = transcript
-      .map(item => `[${item.speaker}]: ${item.text}`)
+      .map(item => `[${item.timestamp}] ${item.speaker}: ${item.text}`)
       .join('\n\n');
     
     navigator.clipboard.writeText(transcriptText).then(() => {
@@ -47,13 +43,34 @@ const TranscriptionPanel: React.FC<TranscriptionPanelProps> = ({
     });
   };
   
+  // Calculate transcript length in seconds or minutes
+  const calculateTranscriptLength = () => {
+    if (transcript.length === 0) return "0:00";
+    
+    // Find the last timestamp
+    const lastSegment = transcript[transcript.length - 1];
+    const timeArr = lastSegment.timestamp.split(':');
+    
+    // Format for display
+    if (timeArr[0] === "00") {
+      return `${timeArr[1]}:${timeArr[2]}`; // MM:SS
+    } else {
+      return `${timeArr[0]}:${timeArr[1]}:${timeArr[2]}`; // HH:MM:SS
+    }
+  };
+  
   return (
     <Card className="glass-panel border-none shadow-smooth h-full flex flex-col animate-enter">
       <CardHeader className="pb-2 pt-6 px-6">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            <CardTitle>Live Transcript</CardTitle>
+            <CardTitle>Transcript</CardTitle>
+            {transcript.length > 0 && (
+              <Badge variant="outline" className="ml-2">
+                {calculateTranscriptLength()}
+              </Badge>
+            )}
           </div>
           {transcript.length > 0 && (
             <Button 
@@ -85,7 +102,7 @@ const TranscriptionPanel: React.FC<TranscriptionPanelProps> = ({
                 <FileText className="h-12 w-12 mb-3 text-muted-foreground/50" />
                 <h3 className="text-lg font-medium">No Transcript Yet</h3>
                 <p className="text-sm max-w-[20rem]">
-                  Start recording to see the live transcript appear here with speaker identification.
+                  Start recording to see the transcript appear here with speaker identification.
                 </p>
               </>
             )}
