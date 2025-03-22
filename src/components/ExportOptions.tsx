@@ -7,7 +7,7 @@ import {
   Download, 
   FileText, 
   FileJson, 
-  FilePdf, 
+  File,
   FileDown,
   CheckCircle
 } from 'lucide-react';
@@ -28,7 +28,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   const exportFormats = [
-    { id: 'pdf', label: 'PDF Document', icon: FilePdf, description: 'Export as a formatted PDF document' },
+    { id: 'pdf', label: 'PDF Document', icon: File, description: 'Export as a formatted PDF document' },
     { id: 'docx', label: 'Word Document', icon: FileText, description: 'Export as a Microsoft Word document' },
     { id: 'md', label: 'Markdown', icon: FileDown, description: 'Export as Markdown for Notion or GitHub' },
     { id: 'json', label: 'JSON', icon: FileJson, description: 'Export structured data as JSON' },
