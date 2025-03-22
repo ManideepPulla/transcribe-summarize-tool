@@ -27,6 +27,7 @@ const Index = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
+  const [audioSource, setAudioSource] = useState<'mic' | 'system'>('system');
   
   // State for summary
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
@@ -42,11 +43,26 @@ const Index = () => {
   }, [mediaStream]);
   
   // Handle starting recording
-  const handleStartRecording = async () => {
+  const handleStartRecording = async (source: 'mic' | 'system') => {
     try {
-      // Get media stream (in a real app, this would depend on user selection)
-      const stream = await getMediaStream('system');
+      setAudioSource(source);
+      
+      // Get media stream based on selected source
+      toast({
+        title: "Requesting access",
+        description: source === 'system' 
+          ? "Please select a screen to share and enable system audio" 
+          : "Please allow microphone access"
+      });
+      
+      const stream = await getMediaStream(source);
       setMediaStream(stream);
+      
+      // Log stream details for debugging
+      console.log(`Got ${source} stream with ${stream.getAudioTracks().length} audio tracks and ${stream.getVideoTracks().length} video tracks`);
+      stream.getAudioTracks().forEach((track, i) => {
+        console.log(`Audio track ${i}:`, track.label, track.enabled, track.readyState);
+      });
       
       // Start transcription
       const stopTranscription = await startTranscription(stream, (segment) => {
@@ -58,7 +74,7 @@ const Index = () => {
       
       toast({
         title: "Recording started",
-        description: "Your meeting is now being recorded and transcribed."
+        description: `Your meeting is now being recorded using ${source === 'system' ? 'system audio' : 'microphone'}.`
       });
       
       // Store stop function for later
@@ -67,7 +83,9 @@ const Index = () => {
       console.error('Error starting recording:', error);
       toast({
         title: "Recording failed",
-        description: "Could not access your media devices. Please check permissions.",
+        description: source === 'system'
+          ? "Could not access system audio. Please check your browser permissions or try using microphone instead."
+          : "Could not access your microphone. Please check permissions.",
         variant: "destructive"
       });
     }
@@ -83,7 +101,10 @@ const Index = () => {
     
     // Stop media stream
     if (mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop());
+      mediaStream.getTracks().forEach(track => {
+        console.log(`Stopping track: ${track.kind} (${track.label})`);
+        track.stop();
+      });
       setMediaStream(null);
     }
     

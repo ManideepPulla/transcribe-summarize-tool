@@ -47,13 +47,43 @@ export const startTranscription = async (
   // 2. Stream audio data to the service
   // 3. Receive and process transcription results
   
+  // Check if stream has audio tracks
+  const audioTracks = mediaStream.getAudioTracks();
+  if (audioTracks.length === 0) {
+    console.warn('No audio tracks found in the provided media stream');
+  } else {
+    console.log(`Audio tracks found: ${audioTracks.length}`);
+    audioTracks.forEach((track, i) => {
+      console.log(`Track ${i}: ${track.label} (${track.kind})`);
+      console.log(`Track settings:`, track.getSettings());
+    });
+  }
+  
+  // Set up an AudioContext to process the audio in a real implementation
+  // This is a placeholder for demonstration
+  try {
+    const audioContext = new AudioContext();
+    const source = audioContext.createMediaStreamSource(mediaStream);
+    console.log('AudioContext and MediaStreamSource created successfully');
+    
+    // In a real implementation, we would connect this to an analyzer
+    // or process it for sending to a transcription service
+    
+    // For demo purposes, we're just confirming we can access the audio
+    // and then continuing with our mock implementation
+  } catch (error) {
+    console.error('Error setting up audio processing:', error);
+  }
+  
   // For demo purposes, we'll simulate transcription with a timer
+  // In a real implementation, this would be replaced with actual
+  // transcription processing of the audio stream
   const intervalId = setInterval(() => {
     const randomSpeaker = SPEAKERS[Math.floor(Math.random() * SPEAKERS.length)];
     const randomSentence = MOCK_SENTENCES[Math.floor(Math.random() * MOCK_SENTENCES.length)];
     
     const now = new Date();
-    const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
     
     onTranscriptUpdate({
       id: nanoid(),
@@ -74,17 +104,80 @@ export const startTranscription = async (
 export const getMediaStream = async (source: 'mic' | 'system'): Promise<MediaStream> => {
   try {
     if (source === 'mic') {
-      return await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('Requesting microphone access...');
+      return await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
     } else {
       // For system audio + screen capture
+      console.log('Requesting system audio + screen capture...');
+      
+      // First check if getDisplayMedia is supported
+      if (!navigator.mediaDevices.getDisplayMedia) {
+        throw new Error('getDisplayMedia is not supported in this browser');
+      }
+      
       // Note: getDisplayMedia with audio may not be supported in all browsers
-      return await navigator.mediaDevices.getDisplayMedia({ 
-        video: true,
-        audio: true 
+      const stream = await navigator.mediaDevices.getDisplayMedia({ 
+        video: {
+          displaySurface: 'monitor',
+          logicalSurface: true,
+          cursor: 'always'
+        } as any,
+        audio: {
+          suppressLocalAudioPlayback: false,
+          echoCancellation: true,
+          noiseSuppression: true
+        } as any
       });
+      
+      // Check if we got audio tracks
+      if (stream.getAudioTracks().length === 0) {
+        console.warn('No audio tracks were captured from system. This may be due to browser or OS limitations.');
+        console.log('Attempting to combine with microphone audio as fallback...');
+        
+        try {
+          // Try to add microphone audio as a fallback
+          const micStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true
+            }
+          });
+          
+          // Add microphone tracks to the stream
+          micStream.getAudioTracks().forEach(track => {
+            stream.addTrack(track);
+          });
+          
+          console.log('Successfully added microphone audio as fallback');
+        } catch (micError) {
+          console.error('Could not add microphone audio as fallback:', micError);
+        }
+      }
+      
+      return stream;
     }
   } catch (error) {
     console.error('Error accessing media devices:', error);
     throw error;
   }
+};
+
+// Helper to combine multiple media streams
+export const combineMediaStreams = (...streams: MediaStream[]): MediaStream => {
+  const combinedStream = new MediaStream();
+  
+  // Add all tracks from all streams to the combined stream
+  for (const stream of streams) {
+    stream.getTracks().forEach(track => {
+      combinedStream.addTrack(track);
+    });
+  }
+  
+  return combinedStream;
 };

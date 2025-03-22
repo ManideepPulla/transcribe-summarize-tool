@@ -1,12 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Mic, Pause, StopCircle, Monitor, Headphones } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface RecordingPanelProps {
-  onStartRecording: () => void;
+  onStartRecording: (audioSource: 'mic' | 'system') => void;
   onStopRecording: () => void;
   isRecording: boolean;
 }
@@ -16,6 +17,7 @@ const RecordingPanel: React.FC<RecordingPanelProps> = ({
   onStopRecording,
   isRecording,
 }) => {
+  const { toast } = useToast();
   const [isPaused, setIsPaused] = useState(false);
   const [audioSource, setAudioSource] = useState<'mic' | 'system'>('system');
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -42,12 +44,36 @@ const RecordingPanel: React.FC<RecordingPanelProps> = ({
   
   const handleTogglePause = () => {
     setIsPaused(!isPaused);
+    
+    toast({
+      title: isPaused ? "Recording resumed" : "Recording paused",
+      description: isPaused ? "The transcription is now active again." : "The transcription is temporarily paused."
+    });
   };
   
   const handleStopRecording = () => {
     onStopRecording();
     setElapsedTime(0);
     setIsPaused(false);
+  };
+  
+  const handleStartRecording = () => {
+    // Check browser compatibility for system audio capture
+    if (audioSource === 'system' && 
+        (!navigator.mediaDevices?.getDisplayMedia || 
+         typeof navigator.mediaDevices.getDisplayMedia !== 'function')) {
+      toast({
+        title: "Browser limitation",
+        description: "Your browser doesn't support system audio capture. Using microphone instead.",
+        variant: "destructive"
+      });
+      // Fall back to microphone
+      setAudioSource('mic');
+      onStartRecording('mic');
+      return;
+    }
+    
+    onStartRecording(audioSource);
   };
   
   return (
@@ -58,7 +84,10 @@ const RecordingPanel: React.FC<RecordingPanelProps> = ({
             <h3 className="text-lg font-medium">Meeting Capture</h3>
             {isRecording && (
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                <span className={cn(
+                  "h-2 w-2 rounded-full bg-red-500",
+                  isPaused ? "" : "animate-pulse"
+                )}></span>
                 <span className="text-sm font-medium">{formatTime(elapsedTime)}</span>
               </div>
             )}
@@ -93,7 +122,7 @@ const RecordingPanel: React.FC<RecordingPanelProps> = ({
               
               <Button 
                 className="w-full h-14 bg-primary hover:bg-primary/90 text-white"
-                onClick={onStartRecording}
+                onClick={handleStartRecording}
               >
                 <Mic className="mr-2 h-5 w-5" />
                 Start Recording
@@ -103,8 +132,14 @@ const RecordingPanel: React.FC<RecordingPanelProps> = ({
             <div className="space-y-4">
               <div className="flex justify-center">
                 <div className="relative w-24 h-24 flex items-center justify-center">
-                  <div className="absolute inset-0 rounded-full bg-red-100/10 animate-pulse"></div>
-                  <div className="absolute inset-2 rounded-full bg-red-100/20 animate-pulse animation-delay-100"></div>
+                  <div className={cn(
+                    "absolute inset-0 rounded-full bg-red-100/10",
+                    !isPaused && "animate-pulse"
+                  )}></div>
+                  <div className={cn(
+                    "absolute inset-2 rounded-full bg-red-100/20",
+                    !isPaused && "animate-pulse animation-delay-100"
+                  )}></div>
                   <div className="relative z-10">
                     <Mic className="h-10 w-10 text-red-500" />
                   </div>
