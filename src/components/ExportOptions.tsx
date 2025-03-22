@@ -12,15 +12,25 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { SummaryContent } from '@/utils/summarizationService';
 
 interface ExportOptionsProps {
   hasSummary: boolean;
   onExport: (format: string) => Promise<void>;
+  summary: SummaryContent | null;
+  transcript: Array<{
+    id: string;
+    speaker: string;
+    text: string;
+    timestamp: string;
+  }>;
 }
 
 const ExportOptions: React.FC<ExportOptionsProps> = ({
   hasSummary,
   onExport,
+  summary,
+  transcript
 }) => {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
@@ -39,6 +49,9 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
     setSelectedFormat(format);
     
     try {
+      if (!summary) {
+        throw new Error("No summary available");
+      }
       await onExport(format);
       toast({
         title: "Export successful",
@@ -50,6 +63,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
         description: "There was an error exporting your notes. Please try again.",
         variant: "destructive",
       });
+      console.error("Export error:", error);
     } finally {
       setIsExporting(false);
       setIsDialogOpen(false);

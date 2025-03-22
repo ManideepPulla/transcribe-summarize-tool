@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Sparkles, Edit, CheckCircle, X, BookText, ListChecks, Lightbulb } from 'lucide-react';
+import { SummaryContent } from '@/utils/summarizationService';
 
 interface SummaryPanelProps {
   transcript: Array<{
@@ -25,7 +26,7 @@ const SummaryPanel: React.FC<SummaryPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('summary');
   const [isEditing, setIsEditing] = useState(false);
-  const [summaryContent, setSummaryContent] = useState({
+  const [summaryContent, setSummaryContent] = useState<SummaryContent>({
     summary: '',
     keyPoints: [],
     actionItems: []

@@ -137,11 +137,11 @@ const Index = () => {
         description: "Please generate a summary before exporting.",
         variant: "destructive"
       });
-      return;
+      return Promise.reject(new Error("No summary available"));
     }
     
     try {
-      await exportNotes(format, transcript, summary);
+      return await exportNotes(format, transcript, summary);
     } catch (error) {
       console.error('Error exporting notes:', error);
       throw error;
@@ -175,6 +175,8 @@ const Index = () => {
             <ExportOptions
               hasSummary={!!summary}
               onExport={handleExport}
+              summary={summary}
+              transcript={transcript}
             />
           </>
         ) : (
@@ -191,6 +193,8 @@ const Index = () => {
                 <ExportOptions
                   hasSummary={!!summary}
                   onExport={handleExport}
+                  summary={summary}
+                  transcript={transcript}
                 />
               </div>
               

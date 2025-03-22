@@ -4,7 +4,6 @@
 
 import { TranscriptSegment } from './transcriptionService';
 import { SummaryContent } from './summarizationService';
-import { useToast } from '@/hooks/use-toast';
 
 // Mock function to export notes in various formats
 export const exportNotes = async (
@@ -31,7 +30,7 @@ export const exportNotes = async (
       switch (format) {
         case 'pdf':
           // In a real app, we would generate a PDF
-          content = 'PDF content would go here';
+          content = generatePDFContent(transcript, summary);
           mimeType = 'application/pdf';
           filename = 'meeting-notes.pdf';
           break;
@@ -63,18 +62,16 @@ export const exportNotes = async (
           filename = 'meeting-notes.txt';
       }
       
-      // Create a demo download (for markdown and JSON only in this demo)
-      if (format === 'md' || format === 'json') {
-        const blob = new Blob([content], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
+      // Create a download for all formats in this demo
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       
       resolve();
     }, 1500);
@@ -115,6 +112,35 @@ const generateMarkdown = (
   });
   
   return md;
+};
+
+// Simple mock PDF content generator (this would be replaced with a real PDF generator)
+const generatePDFContent = (
+  transcript: TranscriptSegment[],
+  summary: SummaryContent
+): string => {
+  // In a real app, this would return binary PDF data
+  // For this demo, we'll just return some text to enable the download
+  
+  const now = new Date();
+  const dateStr = now.toLocaleDateString();
+  
+  let content = `Meeting Notes - ${dateStr}\n\n`;
+  content += `Summary: ${summary.summary}\n\n`;
+  content += "Key Points:\n";
+  summary.keyPoints.forEach(point => {
+    content += `- ${point}\n`;
+  });
+  content += "\nAction Items:\n";
+  summary.actionItems.forEach(item => {
+    content += `- ${item}\n`;
+  });
+  content += "\nTranscript:\n";
+  transcript.forEach(item => {
+    content += `${item.speaker} (${item.timestamp}): ${item.text}\n`;
+  });
+  
+  return content;
 };
 
 // Helper function to add nanoid utility
